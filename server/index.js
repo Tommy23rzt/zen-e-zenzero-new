@@ -12,24 +12,13 @@ dotenv.config();
 
 const app = express();
 
-app.use(helmet({
-    crossOriginResourcePolicy: false,
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            imgSrc: ["'self'", "data:", "http://localhost:8000"],
-            scriptSrc: ["'self'", "'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-        },
-    },
-}));
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://zen-e-zenzero-new.vercel.app'
+];
 
 app.use((req, res, next) => {
     const origin = req.headers.origin;
-    const allowedOrigins = [
-        'http://localhost:3000',
-        'https://zen-e-zenzero-new.vercel.app'
-    ];
     if (origin && (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin))) {
         res.setHeader('Access-Control-Allow-Origin', origin);
     } else if (!origin) {
@@ -37,13 +26,26 @@ app.use((req, res, next) => {
     }
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-access-token');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-access-token, Origin, X-Requested-With, Accept');
     if (req.method === 'OPTIONS') {
-        return res.sendStatus(204);
+        return res.status(204).end();
     }
     next();
 });
+
+app.use(helmet({
+    crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            imgSrc: ["'self'", "data:", "http://localhost:8000", "https://zen-e-zenzero-server.onrender.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+        },
+    },
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(mongoSanitize());
