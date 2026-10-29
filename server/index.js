@@ -1,6 +1,5 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
@@ -16,14 +15,14 @@ const app = express();
 app.use((req, res, next) => {
     const origin = req.headers.origin;
     if (origin) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-        res.setHeader('Vary', 'Origin');
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Vary', 'Origin');
     }
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-access-token, Origin, X-Requested-With, Accept');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-access-token, Origin, X-Requested-With, Accept');
     if (req.method === 'OPTIONS') {
-        return res.status(204).end();
+        return res.sendStatus(204);
     }
     next();
 });
