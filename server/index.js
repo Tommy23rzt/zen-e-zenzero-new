@@ -24,39 +24,23 @@ app.use(helmet({
         },
     },
 }));
-app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
-        const allowedOrigins = [
-            'http://localhost:3000',
-            'https://zen-e-zenzero-new.vercel.app'
-        ];
-        if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-            return callback(null, origin);
-        }
-        return callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token']
-}));
-
-app.options('*', cors({
-    origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
-        const allowedOrigins = [
-            'http://localhost:3000',
-            'https://zen-e-zenzero-new.vercel.app'
-        ];
-        if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-            return callback(null, origin);
-        }
-        return callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token']
-}));
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'https://zen-e-zenzero-new.vercel.app'
+    ];
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+        res.setHeader('Access-Control-Allow-Origin', origin || allowedOrigins[0]);
+    }
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-access-token');
+    if (req.method === 'OPTIONS') {
+        return res.status(204).send();
+    }
+    next();
+});
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(mongoSanitize());
