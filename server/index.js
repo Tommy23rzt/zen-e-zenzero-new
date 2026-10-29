@@ -57,7 +57,7 @@ app.use('/file/upload', writeLimiter);
 
 app.use('/', Router);
 
-const PORT = 8000;
+const PORT = process.env.PORT || 8000;
 
 Connection();
 
