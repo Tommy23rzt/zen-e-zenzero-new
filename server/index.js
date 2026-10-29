@@ -25,8 +25,20 @@ app.use(helmet({
     },
 }));
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://zen-e-zenzero-new.vercel.app', 'https://zen-e-zenzero-new-9fqj8xdla-tommyrzt.vercel.app'],
-    credentials: true
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'https://zen-e-zenzero-new.vercel.app'
+        ];
+        if (allowedOrigins.includes(origin) || (origin && origin.endsWith('.vercel.app'))) {
+            return callback(null, true);
+        }
+        return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
