@@ -66,6 +66,11 @@ app.use('/create', writeLimiter);
 app.use('/comment/new', writeLimiter);
 app.use('/file/upload', writeLimiter);
 
+// Lightweight keep-alive endpoint: no auth, no DB access.
+// Ping it from an external cron (UptimeRobot, cron-job.org, ...) every 5-10 min
+// so the Render free tier does not spin down after 15 min of inactivity.
+app.get('/health', (req, res) => res.status(200).json({ ok: true, ts: Date.now() }));
+
 app.use('/', Router);
 
 const PORT = process.env.PORT || 8000;

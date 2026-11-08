@@ -7,18 +7,31 @@ const API_URL = process.env.REACT_APP_API_URL || 'https://zen-e-zenzero-server.o
 
 const axiosInstance = axios.create({
     baseURL: API_URL,
-    timeout: 10000, 
+    // Render free tier can take 30-60s to wake up from sleep, so a 10s timeout
+    // would abort the request before the server is up.
+    timeout: 60000,
     headers: {
         "content-type": "application/json"
     }
 });
 
+// Errors worth retrying: no response at all (network / timeout) or a gateway
+// error returned by Render while the instance is still booting.
+const isRetryableError = (error) =>
+    !error.response || [502, 503, 504].includes(error.response.status);
+
+const RETRY_DELAYS = [5000, 10000, 15000]; // only for GET requests
+
 axiosInstance.interceptors.request.use(
     function(config) {
-        if (config.TYPE.params) {
-            config.params = config.TYPE.params
-        } else if (config.TYPE.query) {
-            config.url = config.url + '/' + config.TYPE.query;
+        // Avoid re-applying params/query when the request is retried.
+        if (!config.__prepared) {
+            if (config.TYPE.params) {
+                config.params = config.TYPE.params
+            } else if (config.TYPE.query) {
+                config.url = config.url + '/' + config.TYPE.query;
+            }
+            config.__prepared = true;
         }
         return config;
     },
@@ -32,8 +45,19 @@ axiosInstance.interceptors.response.use(
         // Stop global loader here
         return processResponse(response);
     },
-    function(error) {
+    async function(error) {
         // Stop global loader here
+        const config = error.config || {};
+        const method = (config.method || 'get').toLowerCase();
+        const retryCount = config.__retryCount || 0;
+
+        // Retry only idempotent GET requests, to avoid duplicating writes.
+        if (method === 'get' && isRetryableError(error) && retryCount < RETRY_DELAYS.length) {
+            config.__retryCount = retryCount + 1;
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS[retryCount]));
+            return axiosInstance(config);
+        }
+
         return Promise.reject(ProcessError(error));
     }
 )
