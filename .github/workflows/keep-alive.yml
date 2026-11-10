@@ -1,0 +1,40 @@
+name: Keep-alive Render
+
+# Render (free tier) mette il servizio in sleep dopo ~15 minuti di inattività.
+# Questo workflow chiama /health ogni 10 minuti per tenerlo sveglio.
+#
+# Note:
+# - GitHub può ritardare i cron di qualche minuto e li disattiva dopo 60 giorni
+#   senza attività nel repository. Per una garanzia maggiore affianca un monitor
+#   esterno (cron-job.org, UptimeRobot, ...) sullo stesso URL.
+# - I workflow schedulati girano solo dal branch di default (main).
+# - Puoi lanciarlo subito a mano da Actions -> Keep-alive Render -> Run workflow.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  HEALTH_URL: https://zen-e-zenzero-server.onrender.com/health
+
+jobs:
+  ping:
+    name: Ping /health
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Chiama l'endpoint di health
+        run: |
+          echo "Ping $HEALTH_URL alle $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --max-time 60 \
+            --retry 3 \
+            --retry-delay 10 \
+            --retry-all-errors \
+            "$HEALTH_URL"
