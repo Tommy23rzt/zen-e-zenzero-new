@@ -20,7 +20,9 @@ const axiosInstance = axios.create({
 const isRetryableError = (error) =>
     !error.response || [502, 503, 504].includes(error.response.status);
 
-const RETRY_DELAYS = [5000, 10000, 15000]; // only for GET requests
+// Backoff breve all'inizio: se Render è ancora in avvio risponde spesso con un
+// 502 in pochi istanti, quindi non conviene aspettare subito 5 secondi.
+const RETRY_DELAYS = [1000, 2000, 3000, 5000, 8000, 10000, 15000]; // only for GET requests
 
 axiosInstance.interceptors.request.use(
     function(config) {
