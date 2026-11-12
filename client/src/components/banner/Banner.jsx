@@ -1,9 +1,15 @@
 
 import { styled, Box, Typography } from '@mui/material';
 
+const BANNER_URL = 'https://images.pexels.com/photos/1167355/pexels-photo-1167355.jpeg?auto=compress&cs=tinysrgb&w=1600';
+
 const Image = styled(Box)`
     width: 100%;
-    background: url(https://images.pexels.com/photos/1167355/pexels-photo-1167355.jpeg) center/cover no-repeat;
+    background-image: url(${BANNER_URL});
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-color: #171717;
     height: 50vh;
     min-height: 320px;
     max-height: 640px;

@@ -177,12 +177,12 @@ const PostsContent = ({ category }) => {
             )}
             {posts.length ? (
                 <PostsGrid>
-                    {posts.map((post) => (
+                    {posts.map((post, index) => (
                         <Box
                             key={post._id}
                             sx={{ display: 'block', minWidth: 0, height: '100%' }}
                         >
-                            <Post post={post} />
+                            <Post post={post} priority={index < 3} />
                         </Box>
                     ))}
                 </PostsGrid>

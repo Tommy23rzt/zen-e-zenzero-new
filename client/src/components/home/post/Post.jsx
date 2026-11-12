@@ -1,8 +1,11 @@
+import { useEffect, useState } from 'react';
+
 import { styled, Box, Typography, alpha } from '@mui/material';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import { Link } from 'react-router-dom';
 
 const CARD_FONT = "'Cinzel', 'Times New Roman', serif";
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=752&q=80';
 
 const Card = styled(Box)(({ theme }) => {
     const isDark = theme.palette.mode === 'dark';
@@ -55,13 +58,14 @@ const Card = styled(Box)(({ theme }) => {
     };
 });
 
-const ImageWrapper = styled(Box)({
+const ImageWrapper = styled(Box)(({ theme }) => ({
     position: 'relative',
     width: '100%',
     height: 172,
     flexShrink: 0,
-    overflow: 'hidden'
-});
+    overflow: 'hidden',
+    backgroundColor: theme.palette.action.hover
+}));
 
 const Image = styled('img')({
     width: '100%',
@@ -180,14 +184,30 @@ const ReadMore = styled(Typography)(({ theme }) => ({
     color: theme.palette.primary.main
 }));
 
-const Post = ({ post }) => {
-    const url = post.picture ? post.picture : 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=752&q=80';
+const Post = ({ post, priority = false }) => {
+    const picture = post.picture ? post.picture : FALLBACK_IMAGE;
+    const [imageSrc, setImageSrc] = useState(picture);
     const initial = post.username ? post.username.charAt(0).toUpperCase() : '?';
+
+    useEffect(() => {
+        setImageSrc(picture);
+    }, [picture]);
 
     return (
         <Card component={Link} to={`details/${post._id}`} sx={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
             <ImageWrapper>
-                <Image src={url} alt={post.title || 'post'} loading="lazy" decoding="async" />
+                <Image
+                    src={imageSrc}
+                    alt={post.title || 'post'}
+                    loading={priority ? 'eager' : 'lazy'}
+                    decoding="async"
+                    fetchpriority={priority ? 'high' : 'auto'}
+                    onError={() => {
+                        if (imageSrc !== FALLBACK_IMAGE) {
+                            setImageSrc(FALLBACK_IMAGE);
+                        }
+                    }}
+                />
                 <ImageOverlay />
                 {post.categories && <CategoryChip>{typeof post.categories === 'string' ? decodeURIComponent(post.categories) : post.categories}</CategoryChip>}
             </ImageWrapper>
