@@ -6,6 +6,12 @@ import { Link } from 'react-router-dom';
 
 const CARD_FONT = "'Cinzel', 'Times New Roman', serif";
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=752&q=80';
+const CARD_IMAGE_WIDTH = 800;
+
+const toCardImageUrl = (url) => {
+    if (!url || !url.includes('/file/')) return url;
+    return `${url}${url.includes('?') ? '&' : '?'}w=${CARD_IMAGE_WIDTH}`;
+};
 
 const Card = styled(Box)(({ theme }) => {
     const isDark = theme.palette.mode === 'dark';
@@ -185,7 +191,7 @@ const ReadMore = styled(Typography)(({ theme }) => ({
 }));
 
 const Post = ({ post, priority = false }) => {
-    const picture = post.picture ? post.picture : FALLBACK_IMAGE;
+    const picture = post.picture ? toCardImageUrl(post.picture) : FALLBACK_IMAGE;
     const [imageSrc, setImageSrc] = useState(picture);
     const initial = post.username ? post.username.charAt(0).toUpperCase() : '?';
 

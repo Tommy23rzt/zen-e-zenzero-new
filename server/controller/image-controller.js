@@ -1,8 +1,17 @@
 import grid from 'gridfs-stream';
 import mongoose from 'mongoose';
 
+let sharp = null;
+try {
+    ({ default: sharp } = await import('sharp'));
+} catch (error) {
+    console.warn('sharp non disponibile: le immagini verranno servite a dimensione originale');
+}
 
 const url = process.env.BASE_URL || 'http://localhost:8000'
+
+const THUMBNAIL_WIDTHS = new Set([320, 480, 800, 1200]);
+const RESIZABLE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 let gridfsBucketPhotos, gridfsBucketFs;
 const conn = mongoose.connection;
@@ -55,6 +64,12 @@ const findImageFile = async (filename) => {
     return null;
 };
 
+const getRequestedWidth = (query) => {
+    const raw = Array.isArray(query.w) ? query.w[0] : query.w;
+    const width = Number.parseInt(raw, 10);
+    return THUMBNAIL_WIDTHS.has(width) ? width : null;
+};
+
 export const uploadImage = (request, response) => {
     if(!request.file) 
         return response.status(404).json("File not found");
@@ -78,13 +93,24 @@ export const getImage = async (request, response) => {
             return response.status(503).json({ msg: 'Storage not ready' });
         }
 
-        response.set('Content-Type', file.contentType || 'application/octet-stream');
-        if (file.length) {
-            response.set('Content-Length', String(file.length));
-        }
+        const contentType = file.contentType || 'application/octet-stream';
+        const requestedWidth = getRequestedWidth(request.query);
+        const shouldResize = Boolean(
+            sharp && requestedWidth && RESIZABLE_TYPES.has(contentType)
+        );
+
         // Il nome del file contiene un timestamp e non viene riutilizzato:
         // il contenuto può restare nella cache del browser per un anno.
         response.set('Cache-Control', 'public, max-age=31536000, immutable');
+
+        if (shouldResize) {
+            response.set('Content-Type', 'image/webp');
+        } else {
+            response.set('Content-Type', contentType);
+            if (file.length) {
+                response.set('Content-Length', String(file.length));
+            }
+        }
 
         const readStream = bucket.openDownloadStream(file._id);
         readStream.on('error', () => {
@@ -94,7 +120,26 @@ export const getImage = async (request, response) => {
                 response.destroy();
             }
         });
-        readStream.pipe(response);
+
+        if (!shouldResize) {
+            readStream.pipe(response);
+            return;
+        }
+
+        const transform = sharp()
+            .rotate()
+            .resize({ width: requestedWidth, withoutEnlargement: true })
+            .webp({ quality: 80 });
+
+        transform.on('error', () => {
+            if (!response.headersSent) {
+                response.status(500).json({ msg: 'Image processing failed' });
+            } else {
+                response.destroy();
+            }
+        });
+
+        readStream.pipe(transform).pipe(response);
     } catch (error) {
         if (!response.headersSent) {
             response.status(500).json({ msg: error.message });
